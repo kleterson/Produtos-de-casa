@@ -8,30 +8,43 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Cole aqui a sua URL completa do Pooler do Supabase
 const pool = new Pool({
     connectionString: 'postgresql://postgres.fejrfxeqcxgytwyiolea:%40G1hh4ej22d@aws-0-us-east-1.pooler.supabase.com:6543/postgres',
     ssl: { rejectUnauthorized: false }
 });
 
-// Rota: Listar itens e calcular resumo do mês
+
+// Rota: Listar itens (com filtro opcional por mês e ano) e calcular resumo
 app.get('/api/itens', async (req, res) => {
     try {
+        const { mes, ano } = req.query;
         const result = await pool.query('SELECT * FROM produtos_casa ORDER BY data_compra DESC');
-        const data = result.rows;
+        const todosItens = result.rows;
 
         const hoje = new Date();
-        const mesAtual = hoje.getMonth();
-        const anoAtual = hoje.getFullYear();
+        const mesFiltro = mes !== undefined ? parseInt(mes) : hoje.getMonth();
+        const anoFiltro = ano !== undefined ? parseInt(ano) : hoje.getFullYear();
 
-        let totalMes = 0;
-        data.forEach(item => {
+        // Filtra os itens apenas do mês selecionado para a exibição principal
+        const itensFiltrados = todosItens.filter(item => {
             const dataItem = new Date(item.data_compra);
-            if (dataItem.getMonth() === mesAtual && dataItem.getFullYear() === anoAtual) {
-                totalMes += Number(item.valor_total || 0);
-            }
+            return dataItem.getMonth() === mesFiltro && dataItem.getFullYear() === anoFiltro;
         });
 
-        res.json({ itens: data, totalMes });
+        // Calcula o total gasto especificamente no mês selecionado
+        let totalMes = 0;
+        itensFiltrados.forEach(item => {
+            totalMes += Number(item.valor_total || 0);
+        });
+
+        res.json({ 
+            itens: itensFiltrados, 
+            todosItensCount: todosItens.length,
+            totalMes, 
+            mesAtual: mesFiltro, 
+            anoAtual: anoFiltro 
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
