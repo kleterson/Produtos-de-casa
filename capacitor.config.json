@@ -1,0 +1,9 @@
+{
+  "appId": "com.produtoscasa.app",
+  "appName": "Despensa e Mercado",
+  "webDir": "public",
+  "server": {
+    "url": "https://produtos-de-casa.onrender.com",
+    "cleartext": true
+  }
+}
